@@ -21,7 +21,7 @@ public class TOTP {
     throws Exception {
         this.timeStepInSeconds = timeStepInSeconds;
         
-        Base32 base32 = new Base32(Base32.BASE32, false, false);
+        Base32 base32 = new Base32("BASE32", false, false);
         this.key = base32.fromString(base32EncodedSecret);
         
         if (this.key == null) {

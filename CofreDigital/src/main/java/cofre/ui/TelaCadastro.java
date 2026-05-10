@@ -1,5 +1,5 @@
 package cofre.ui;
-
+import cofre.ui.TelaLogin;
 import cofre.crypto.BCryptUtil;
 import cofre.crypto.CryptoManager;
 import cofre.db.ChaveiroDAO;
@@ -195,7 +195,7 @@ public class TelaCadastro extends JFrame {
                 RegistroDAO.registrar(6010, adminLogado.getUid());
             } catch (Exception ex) {}
             dispose();
-            // TODO: abrir TelaPrincipal
+            new TelaLogin().setVisible(true);
         });
 
         painelBotoes.add(btnCadastrar);
@@ -406,14 +406,47 @@ public class TelaCadastro extends JFrame {
 
             // Atualiza KEYID do usuário
             UsuarioDAO.atualizarKeyId(uid, kid);
+            // Monta a URI do Google Authenticator
+            String uri = "otpauth://totp/Cofre%20Digital:" + email + "?secret=" + tokenKeyBase32;
 
-            // Mostra o segredo TOTP para cadastrar no Google Authenticator
+// Gera o QRCode
+            com.google.zxing.qrcode.QRCodeWriter qrWriter = new com.google.zxing.qrcode.QRCodeWriter();
+            com.google.zxing.common.BitMatrix bitMatrix = qrWriter.encode(
+                    uri, com.google.zxing.BarcodeFormat.QR_CODE, 200, 200);
+            java.awt.image.BufferedImage qrImage = com.google.zxing.client.j2se.MatrixToImageWriter
+                    .toBufferedImage(bitMatrix);
+
+// Painel com QRCode e campos copiáveis
+            JPanel painelTotp = new JPanel(new BorderLayout(10, 10));
+
+// QRCode no topo
+            JLabel lblQR = new JLabel(new ImageIcon(qrImage));
+            lblQR.setHorizontalAlignment(SwingConstants.CENTER);
+            painelTotp.add(lblQR, BorderLayout.NORTH);
+
+// Campos copiáveis no centro
+            JPanel painelCampos = new JPanel(new GridLayout(4, 1, 5, 5));
+            painelCampos.add(new JLabel("Usuário cadastrado! Escaneie o QRCode ou copie o segredo:"));
+
+            JTextField campoSegredo = new JTextField(tokenKeyBase32);
+            campoSegredo.setEditable(false);
+            campoSegredo.setFont(new Font("Monospaced", Font.BOLD, 12));
+            painelCampos.add(new JLabel("Segredo BASE32:"));
+            painelCampos.add(campoSegredo);
+
+            JTextField campoURI = new JTextField(uri);
+            campoURI.setEditable(false);
+            painelCampos.add(campoURI);
+
+            painelTotp.add(painelCampos, BorderLayout.CENTER);
+
             JOptionPane.showMessageDialog(this,
-                    "Usuário cadastrado com sucesso!\n\n" +
-                            "Cadastre este segredo no Google Authenticator:\n\n" +
-                            tokenKeyBase32 + "\n\n" +
-                            "URI: otpauth://totp/Cofre%20Digital:" +
-                            email + "?secret=" + tokenKeyBase32,
+                    painelTotp,
+                    "Cadastro Realizado",
+                    JOptionPane.INFORMATION_MESSAGE);
+
+            JOptionPane.showMessageDialog(this,
+                    painelTotp,
                     "Cadastro Realizado",
                     JOptionPane.INFORMATION_MESSAGE);
 
@@ -432,8 +465,7 @@ public class TelaCadastro extends JFrame {
             boolean primeiroAdmin = (adminLogado == null || adminLogado.getUid() == 0);
             if (primeiroAdmin) {
                 dispose();
-                // TODO: abrir TelaLogin
-                System.out.println("Ir para TelaLogin...");
+                new TelaLogin().setVisible(true);
             }
 
         } catch (Exception ex) {

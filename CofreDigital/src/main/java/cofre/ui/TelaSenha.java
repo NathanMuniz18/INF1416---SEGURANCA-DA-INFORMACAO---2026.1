@@ -6,6 +6,8 @@ import java.awt.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import cofre.db.RegistroDAO;
+import cofre.db.UsuarioDAO;
 
 public class TelaSenha extends JFrame {
 
@@ -24,6 +26,12 @@ public class TelaSenha extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setResizable(false);
+
+        try {
+            RegistroDAO.registrar(3001, usuario.getUid());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         inicializarComp();
         embaralharBotoes(); 
@@ -112,19 +120,28 @@ public class TelaSenha extends JFrame {
 
         List<String> possiveisSenhas = gerarCombinacoes(sequenciaDigitada);
         boolean autenticado = false;
+        String senhaCorreta = null;
 
         System.out.println("Testando " + possiveisSenhas.size() + " combinações...");
         for (String senhaTeste : possiveisSenhas) {
             if (cofre.crypto.BCryptUtil.verificar(usuarioLogado.getHash(), senhaTeste)) {
                 autenticado = true;
+                senhaCorreta = senhaTeste;
                 break;
             }
-        }    
+        }
 
         if (autenticado) {
-            System.out.println("Senha correta! Indo para Etapa 3...");
-            // TODO: Registrar sucesso no log (código 3003)
-            // TODO: Abrir a Tela do TOTP (Etapa 3) e fechar esta tela (dispose)
+
+            try {
+                RegistroDAO.registrar(3003, usuarioLogado.getUid());
+                RegistroDAO.registrar(3002, usuarioLogado.getUid());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            tentativasErro = 0;
+            dispose();
+            new TelaToken(usuarioLogado, senhaCorreta).setVisible(true);
         
         } else {
             processarErro();
@@ -159,23 +176,27 @@ public class TelaSenha extends JFrame {
 
     private void processarErro() {
         tentativasErro++;
-        
+        try {
+            if (tentativasErro == 1) RegistroDAO.registrar(3004, usuarioLogado.getUid());
+            else if (tentativasErro == 2) RegistroDAO.registrar(3005, usuarioLogado.getUid());
+            else RegistroDAO.registrar(3006, usuarioLogado.getUid());
+        } catch (Exception e) { e.printStackTrace(); }
+
         if (tentativasErro >= 3) {
-            JOptionPane.showMessageDialog(this, 
-                "Acesso bloqueado por 2 minutos devido a múltiplas falhas.", 
-                "Bloqueio", JOptionPane.ERROR_MESSAGE);
-                
-            // TODO: Atualizar o banco de dados (tabela Usuarios) para definir BLK = 1 e a data/hora atual (BLK_TIME)
-            // TODO: Registrar bloqueio no log (código 3007)
-            
+            try {
+                UsuarioDAO.bloquear(usuarioLogado.getUid());
+                RegistroDAO.registrar(3007, usuarioLogado.getUid());
+                RegistroDAO.registrar(3002, usuarioLogado.getUid());
+            } catch (Exception e) { e.printStackTrace(); }
+            JOptionPane.showMessageDialog(this,
+                    "Acesso bloqueado por 2 minutos!", "Bloqueio", JOptionPane.ERROR_MESSAGE);
             dispose();
-            // TODO: Reabrir a TelaLogin
+            new TelaLogin().setVisible(true);
         } else {
-            // TODO: Registrar erro no log (códigos 3004, 3005 ou 3006 dependendo da tentativa)
-            JOptionPane.showMessageDialog(this, 
-                "Senha incorreta! Tentativa " + tentativasErro + " de 3.", 
-                "Erro de Autenticação", JOptionPane.WARNING_MESSAGE);
-            limparSenha(); 
+            JOptionPane.showMessageDialog(this,
+                    "Senha incorreta! Tentativa " + tentativasErro + " de 3.",
+                    "Erro", JOptionPane.WARNING_MESSAGE);
+            limparSenha();
         }
     }
 }

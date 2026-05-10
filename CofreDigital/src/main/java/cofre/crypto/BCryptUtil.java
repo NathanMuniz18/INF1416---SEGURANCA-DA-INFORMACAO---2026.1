@@ -20,15 +20,20 @@ public class BCryptUtil {
      */
     public static String gerarHash(String senha) {
         // Gera um SALT aleatório de 16 bytes
-        byte[] salt = new byte[16];
-        new SecureRandom().nextBytes(salt);
+        try { //precisa ser sha1prng obrigatoriamente ne?
+            byte[] salt = new byte[16];
+            SecureRandom.getInstance("SHA1PRNG").nextBytes(salt);
 
         // Gera o hash BCrypt versão 2y com custo 8
         // O método generate recebe: senha como char[], salt e custo
-        return OpenBSDBCrypt.generate("2y",
-                senha.toCharArray(),
-                salt,
-                CUSTO);
+            return OpenBSDBCrypt.generate("2y",
+                    senha.toCharArray(),
+                    salt,
+                    CUSTO);
+        } catch (Exception e) {
+            throw new RuntimeException("Erro crítico: Algoritmo SHA1PRNG não encontrado no sistema.", e);
+        }
+
     }
 
     /**

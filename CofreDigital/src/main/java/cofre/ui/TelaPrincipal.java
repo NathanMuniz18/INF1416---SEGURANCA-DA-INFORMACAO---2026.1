@@ -78,10 +78,8 @@ public class TelaPrincipal extends JFrame {
             try {
                 RegistroDAO.registrar(5003, usuario.getUid());
             } catch (Exception ex) {}
-            // TODO: abrir TelaConsulta
-            JOptionPane.showMessageDialog(this,
-                    "Em construção!", "Aviso",
-                    JOptionPane.INFORMATION_MESSAGE);
+            dispose();
+            new TelaConsulta(usuario).setVisible(true);
         });
         corpo2.add(btn2);
 

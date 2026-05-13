@@ -4,6 +4,7 @@ import cofre.db.DatabaseManager;
 import cofre.db.RegistroDAO;
 import cofre.db.UsuarioDAO;
 import cofre.ui.TelaCadastro;
+import cofre.ui.TelaFraseAdmin;
 import cofre.ui.TelaLogin;
 
 import javax.swing.SwingUtilities;
@@ -22,10 +23,10 @@ public class Main {
                     new TelaCadastro(null).setVisible(true);
                 });
             } else {
-                // Execuções seguintes — tela de login
+                // Execuções seguintes — pede frase do admin primeiro
                 RegistroDAO.registrar(1006);
                 SwingUtilities.invokeLater(() -> {
-                    new TelaLogin().setVisible(true);
+                    new TelaFraseAdmin().setVisible(true);
                 });
             }
 

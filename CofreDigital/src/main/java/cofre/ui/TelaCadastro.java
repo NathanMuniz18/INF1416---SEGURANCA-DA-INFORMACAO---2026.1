@@ -1,4 +1,5 @@
 package cofre.ui;
+import cofre.SessaoSistema;
 import cofre.ui.TelaLogin;
 import cofre.crypto.BCryptUtil;
 import cofre.crypto.CryptoManager;
@@ -309,10 +310,17 @@ public class TelaCadastro extends JFrame {
             byte[] bytesChave;
             PrivateKey chavePrivada;
             try {
+                // Lê os bytes cifrados do arquivo
                 bytesChave = CryptoManager.lerChavePrivadaDoArquivo(
                         arquivoChave.getAbsolutePath(), frase);
-                chavePrivada = CryptoManager.restaurarChavePrivada(
-                        bytesChave, frase);
+
+                // Decifra os bytes para guardar no banco já decifrados
+                javax.crypto.SecretKey chaveAESArquivo = CryptoManager.gerarChaveAES(frase);
+                byte[] bytesDecifrados = CryptoManager.decifrarAES(bytesChave, chaveAESArquivo);
+
+                // Restaura a chave privada para validação
+                chavePrivada = CryptoManager.restaurarChavePrivada(bytesChave, frase);
+                System.out.println("Tamanho bytes salvos no banco: " + bytesChave.length);
             } catch (Exception e) {
                 if (adminLogado != null && adminLogado.getUid() > 0)
                     RegistroDAO.registrar(6006, adminLogado.getUid());
@@ -464,6 +472,8 @@ public class TelaCadastro extends JFrame {
             // Se for o primeiro admin vai para a tela de login
             boolean primeiroAdmin = (adminLogado == null || adminLogado.getUid() == 0);
             if (primeiroAdmin) {
+                // Salva a frase do admin em memória
+                SessaoSistema.setFraseSecretaAdmin(frase);
                 dispose();
                 new TelaLogin().setVisible(true);
             }

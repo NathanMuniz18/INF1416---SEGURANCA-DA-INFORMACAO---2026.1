@@ -118,6 +118,7 @@ public class TelaSenha extends JFrame {
         senha.setText("");
         btnOk.setEnabled(false);
         embaralharBotoes();
+        
     }
 
     private void validarSenha() {

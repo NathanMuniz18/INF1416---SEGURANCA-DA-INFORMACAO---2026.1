@@ -453,10 +453,6 @@ public class TelaCadastro extends JFrame {
                     "Cadastro Realizado",
                     JOptionPane.INFORMATION_MESSAGE);
 
-            JOptionPane.showMessageDialog(this,
-                    painelTotp,
-                    "Cadastro Realizado",
-                    JOptionPane.INFORMATION_MESSAGE);
 
             // Limpa o formulário
             arquivoCertificado = null;

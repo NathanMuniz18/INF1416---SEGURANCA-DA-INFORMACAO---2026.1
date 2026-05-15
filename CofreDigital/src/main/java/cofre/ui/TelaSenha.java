@@ -16,6 +16,7 @@ public class TelaSenha extends JFrame {
     private JPasswordField senha;
     private List<String> sequenciaDigitada;
     private int tentativasErro = 0;
+    private JButton btnOk;
 
     public TelaSenha(Usuario usuario) {
         this.usuarioLogado = usuario;
@@ -65,7 +66,10 @@ public class TelaSenha extends JFrame {
         painelPrincipal.add(painelTeclado, BorderLayout.CENTER);
 
         JPanel painelAcoes = new JPanel(new FlowLayout());
-        JButton btnOk = new JButton("OK");
+
+        btnOk = new JButton("OK");
+        btnOk.setEnabled(false);
+        
         JButton btnLimpar = new JButton("LIMPAR");
 
         btnLimpar.addActionListener(e -> limparSenha());
@@ -103,13 +107,19 @@ public class TelaSenha extends JFrame {
             senha.setText(senhaAtual + "*");
             
             embaralharBotoes();
+            
+            if (sequenciaDigitada.size() >= 8) {
+                btnOk.setEnabled(true);
+            }
         }
     }
 
     private void limparSenha() {
         sequenciaDigitada.clear();
         senha.setText("");
+        btnOk.setEnabled(false);
         embaralharBotoes();
+        
     }
 
     private void validarSenha() {

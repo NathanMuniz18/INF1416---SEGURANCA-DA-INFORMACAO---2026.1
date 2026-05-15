@@ -15,6 +15,15 @@ public class Main {
         try {
             DatabaseManager.inicializar();
             RegistroDAO.registrar(1001);
+            
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                SessaoSistema.limpar();
+                try {
+                    RegistroDAO.registrar(1002);
+                } catch (Exception e) {
+                    System.err.println("Erro ao registrar encerramento: " + e.getMessage());
+                }
+            }));
 
             if (!UsuarioDAO.existeUsuario()) {
                 // Primeira execução — cadastro do admin
@@ -29,6 +38,7 @@ public class Main {
                     new TelaFraseAdmin().setVisible(true);
                 });
             }
+            
 
         } catch (Exception e) {
             System.err.println("Erro fatal ao iniciar o sistema:");

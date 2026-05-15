@@ -69,7 +69,6 @@ public class TelaSenha extends JFrame {
 
         btnOk = new JButton("OK");
         btnOk.setEnabled(false);
-        
         JButton btnLimpar = new JButton("LIMPAR");
 
         btnLimpar.addActionListener(e -> limparSenha());
@@ -107,7 +106,7 @@ public class TelaSenha extends JFrame {
             senha.setText(senhaAtual + "*");
             
             embaralharBotoes();
-            
+
             if (sequenciaDigitada.size() >= 8) {
                 btnOk.setEnabled(true);
             }

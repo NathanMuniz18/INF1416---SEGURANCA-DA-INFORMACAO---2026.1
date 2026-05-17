@@ -1,0 +1,186 @@
+package logview;
+
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+
+import java.io.Console;
+import java.io.FileInputStream;
+import java.security.*;
+import java.security.cert.*;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.sql.*;
+import java.util.Base64;
+
+public class Main {
+
+    public static void main(String[] args) throws Exception {
+
+        Security.addProvider(new BouncyCastleProvider());
+
+        // 1. Verifica se os argumentos foram passados
+        if (args.length < 1) {
+            System.out.println("Uso: logview <caminho_chave_privada>");
+            System.exit(1);
+        }
+
+        String caminhoChave = args[0];
+        String caminhoBanco = "../CofreDigital/cofre.db";
+
+        // 2. Lê a frase secreta via teclado sem echo
+        Console console = System.console();
+        if (console == null) {
+            System.out.println("Erro: execute pelo CMD, não pelo IntelliJ!");
+            System.exit(1);
+        }
+
+        char[] fraseArray = console.readPassword("Frase secreta: ");
+        String frase = new String(fraseArray);
+
+        // 3. Lê os bytes do arquivo .key
+        byte[] chaveBytes;
+        try {
+            FileInputStream fis = new FileInputStream(caminhoChave);
+            chaveBytes = fis.readAllBytes();
+            fis.close();
+        } catch (Exception e) {
+            System.out.println("Erro: arquivo de chave privada não encontrado!");
+            System.exit(1);
+            return;
+        }
+
+        // 4. Restaura a chave privada
+        PrivateKey chavePrivada;
+        try {
+            chavePrivada = restaurarChavePrivada(chaveBytes, frase);
+        } catch (Exception e) {
+            System.out.println("Erro: frase secreta inválida!");
+            System.exit(1);
+            return;
+        }
+
+        // 5. Valida assinando 2048 bytes
+        try {
+            String certPEM = buscarCertificadoAdmin(caminhoBanco);
+            if (certPEM == null) {
+                System.out.println("Erro: certificado do admin não encontrado no banco!");
+                System.exit(1);
+                return;
+            }
+
+            X509Certificate cert = restaurarCertificado(certPEM);
+            byte[] dados = new byte[2048];
+            new SecureRandom().nextBytes(dados);
+            byte[] assinatura = assinar(dados, chavePrivada);
+
+            if (!verificarAssinatura(dados, assinatura, cert.getPublicKey())) {
+                System.out.println("Erro: validação da chave privada falhou!");
+                System.exit(1);
+                return;
+            }
+        } catch (Exception e) {
+            System.out.println("Erro: " + e.getMessage());
+            System.exit(1);
+            return;
+        }
+
+        // 6. Exibe os logs em ordem cronológica
+        System.out.println("\n=== LOG DO SISTEMA - COFRE DIGITAL ===\n");
+        exibirLogs(caminhoBanco);
+    }
+
+    private static void exibirLogs(String caminhoBanco) {
+        try {
+            Connection conn = DriverManager.getConnection("jdbc:sqlite:" + caminhoBanco);
+            PreparedStatement ps = conn.prepareStatement(
+                    "SELECT r.DATA_HORA, r.MID, u.EMAIL, u.NOME " +
+                            "FROM Registros r " +
+                            "LEFT JOIN Usuarios u ON r.UID = u.UID " +
+                            "ORDER BY r.DATA_HORA ASC"
+            );
+
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                String dataHora = rs.getString("DATA_HORA");
+                int mid = rs.getInt("MID");
+                String email = rs.getString("EMAIL");
+                String nome = rs.getString("NOME");
+
+                if (email != null) {
+                    System.out.printf("[%s] %d (%s - %s)%n",
+                            dataHora, mid, nome, email);
+                } else {
+                    System.out.printf("[%s] %d%n", dataHora, mid);
+                }
+            }
+
+            rs.close();
+            ps.close();
+            conn.close();
+
+        } catch (Exception e) {
+            System.out.println("Erro ao ler logs: " + e.getMessage());
+        }
+    }
+
+    private static String buscarCertificadoAdmin(String caminhoBanco) {
+        try {
+            Connection conn = DriverManager.getConnection("jdbc:sqlite:" + caminhoBanco);
+            PreparedStatement ps = conn.prepareStatement(
+                    "SELECT CERTIFICADO FROM Chaveiro WHERE UID = 1"
+            );
+            ResultSet rs = ps.executeQuery();
+            String cert = null;
+            if (rs.next()) cert = rs.getString("CERTIFICADO");
+            rs.close();
+            ps.close();
+            conn.close();
+            return cert;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private static PrivateKey restaurarChavePrivada(byte[] bytesChaveCifrada,
+                                                    String fraseSecreta) throws Exception {
+        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
+        sr.setSeed(fraseSecreta.getBytes("UTF-8"));
+        javax.crypto.KeyGenerator kg = javax.crypto.KeyGenerator.getInstance("AES");
+        kg.init(256, sr);
+        javax.crypto.SecretKey chaveAES = kg.generateKey();
+
+        javax.crypto.Cipher cipher = javax.crypto.Cipher.getInstance("AES/ECB/PKCS5Padding");
+        cipher.init(javax.crypto.Cipher.DECRYPT_MODE, chaveAES);
+        byte[] bytesBase64 = cipher.doFinal(bytesChaveCifrada);
+
+        String pemStr = new String(bytesBase64, "UTF-8");
+        pemStr = pemStr.replace("-----BEGIN PRIVATE KEY-----", "")
+                .replace("-----END PRIVATE KEY-----", "")
+                .replaceAll("\\s", "");
+        byte[] bytesChave = Base64.getDecoder().decode(pemStr);
+
+        PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(bytesChave);
+        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+        return keyFactory.generatePrivate(keySpec);
+    }
+
+    private static X509Certificate restaurarCertificado(String pem) throws Exception {
+        byte[] certBytes = pem.getBytes("UTF-8");
+        CertificateFactory cf = CertificateFactory.getInstance("X.509");
+        return (X509Certificate) cf.generateCertificate(
+                new java.io.ByteArrayInputStream(certBytes));
+    }
+
+    private static byte[] assinar(byte[] dados, PrivateKey chavePrivada) throws Exception {
+        Signature sig = Signature.getInstance("SHA1withRSA");
+        sig.initSign(chavePrivada);
+        sig.update(dados);
+        return sig.sign();
+    }
+
+    private static boolean verificarAssinatura(byte[] dados, byte[] assinatura,
+                                               PublicKey chavePublica) throws Exception {
+        Signature sig = Signature.getInstance("SHA1withRSA");
+        sig.initVerify(chavePublica);
+        sig.update(dados);
+        return sig.verify(assinatura);
+    }
+}

@@ -131,7 +131,6 @@ public class TelaSenha extends JFrame {
         boolean autenticado = false;
         String senhaCorreta = null;
 
-        System.out.println("Testando " + possiveisSenhas.size() + " combinações...");
         for (String senhaTeste : possiveisSenhas) {
             if (cofre.crypto.BCryptUtil.verificar(usuarioLogado.getHash(), senhaTeste)) {
                 autenticado = true;
@@ -155,8 +154,7 @@ public class TelaSenha extends JFrame {
         } else {
             processarErro();
         }
-        
-        //System.out.println("Duplas selecionadas: " + sequenciaDigitada);
+
     }
 
 

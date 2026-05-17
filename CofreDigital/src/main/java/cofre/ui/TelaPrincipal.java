@@ -35,9 +35,6 @@ public class TelaPrincipal extends JFrame {
 
     private void inicializarComponentes() {
 
-        // -------------------------------------------------------
-        // CABEÇALHO
-        // -------------------------------------------------------
         JPanel cabecalho = new JPanel(new GridLayout(3, 1));
         cabecalho.setBorder(BorderFactory.createTitledBorder("Usuário Logado"));
         cabecalho.add(new JLabel("  Login: " + usuario.getEmail()));
@@ -46,22 +43,16 @@ public class TelaPrincipal extends JFrame {
         cabecalho.add(new JLabel("  Nome: " + usuario.getNome()));
         add(cabecalho, BorderLayout.NORTH);
 
-        // -------------------------------------------------------
-        // CORPO 1 - total de acessos
-        // -------------------------------------------------------
         JPanel corpo1 = new JPanel(new FlowLayout(FlowLayout.LEFT));
         corpo1.setBorder(BorderFactory.createTitledBorder("Acessos"));
         corpo1.add(new JLabel("Total de acessos do usuário: " + usuario.getCt()));
 
-        // -------------------------------------------------------
-        // CORPO 2 - menu principal
-        // -------------------------------------------------------
         JPanel corpo2 = new JPanel(new GridLayout(4, 1, 5, 5));
         corpo2.setBorder(BorderFactory.createTitledBorder("Menu Principal"));
 
         // Opção 1 - só aparece para administrador
         if (usuario.isAdmin()) {
-            JButton btn1 = new JButton("1 - Cadastrar um novo usuário");
+            JButton btn1 = new JButton("Cadastrar um novo usuário");
             btn1.addActionListener(e -> {
                 try {
                     RegistroDAO.registrar(5002, usuario.getUid());
@@ -73,7 +64,7 @@ public class TelaPrincipal extends JFrame {
         }
 
         // Opção 2
-        JButton btn2 = new JButton("2 - Consultar pasta de arquivos secretos");
+        JButton btn2 = new JButton("Consultar pasta de arquivos secretos");
         btn2.addActionListener(e -> {
             try {
                 RegistroDAO.registrar(5003, usuario.getUid());
@@ -84,7 +75,7 @@ public class TelaPrincipal extends JFrame {
         corpo2.add(btn2);
 
         // Opção 3 - Sair
-        JButton btn3 = new JButton("3 - Sair do Sistema");
+        JButton btn3 = new JButton("Sair do Sistema");
         btn3.addActionListener(e -> {
             try {
                 RegistroDAO.registrar(5004, usuario.getUid());

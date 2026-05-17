@@ -10,15 +10,8 @@ public class DatabaseManager {
     // O arquivo cofre.db será criado automaticamente na pasta do projeto
     private static final String DB_URL = "jdbc:sqlite:cofre.db";
 
-    // Guarda a conexão aberta para reutilizar
-    // é compartilhada por toda a aplicação
     private static Connection connection = null;
 
-    /**
-     * Retorna a conexão com o banco de dados.
-     * Se ainda não foi aberta, abre agora.
-     * Se já estava aberta, reutiliza a mesma (não abre duas vezes).
-     */
     public static Connection getConnection() throws Exception {
         if (connection == null || connection.isClosed()) {
             connection = DriverManager.getConnection(DB_URL);
@@ -26,20 +19,11 @@ public class DatabaseManager {
         return connection;
     }
 
-    /**
-     * Inicializa o banco de dados.
-     * Deve ser chamado uma vez quando o programa iniciar.
-     * Cria todas as tabelas se ainda não existirem.
-     */
     public static void inicializar() throws Exception {
         Connection conn = getConnection();
         Statement stmt = conn.createStatement();
 
-        // -------------------------------------------------------
-        // TABELA: Grupos
-        // Armazena os grupos do sistema.
-        // GID 1 = Administrador, GID 2 = Usuário
-        // -------------------------------------------------------
+
         stmt.execute("""
             CREATE TABLE IF NOT EXISTS Grupos (
                 GID  INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -47,23 +31,6 @@ public class DatabaseManager {
             )
         """);
 
-        // -------------------------------------------------------
-        // TABELA: Usuarios
-        // Uma linha por usuário cadastrado no sistema.
-        //
-        // UID       → identificador único do usuário
-        // NOME      → nome extraído do certificado digital
-        // EMAIL     → e-mail extraído do certificado (usado como login)
-        // HASH      → senha pessoal armazenada com BCrypt
-        // TOKEN_KEY → chave TOTP de 20 bytes cifrada com AES,
-        //             codificada em BASE32
-        // KEYID     → referência ao par (certificado, chave privada)
-        //             na tabela Chaveiro
-        // GID       → grupo do usuário (1=Admin, 2=Usuário)
-        // CT        → contador de acessos ao sistema
-        // BLK       → bloqueio: 0 = livre, 1 = bloqueado
-        // BLK_TIME  → data/hora em que o bloqueio foi aplicado
-        // -------------------------------------------------------
         stmt.execute("""
             CREATE TABLE IF NOT EXISTS Usuarios (
                 UID       INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -80,16 +47,6 @@ public class DatabaseManager {
             )
         """);
 
-        // -------------------------------------------------------
-        // TABELA: Chaveiro
-        // Armazena o certificado digital e a chave privada
-        // de cada usuário, associados ao seu UID.
-        //
-        // KID          → identificador único do par cert+chave
-        // UID          → a qual usuário pertence
-        // CERTIFICADO  → certificado X.509 em formato PEM (texto)
-        // CHAVE_PRIVADA→ chave privada PKCS8 cifrada com AES (binário)
-        // -------------------------------------------------------
         stmt.execute("""
             CREATE TABLE IF NOT EXISTS Chaveiro (
                 KID           INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -100,13 +57,6 @@ public class DatabaseManager {
             )
         """);
 
-        // -------------------------------------------------------
-        // TABELA: Mensagens
-        // Armazena os textos fixos das mensagens de log.
-        // Os códigos vão de 1001 a 8004 conforme o enunciado.
-        // {0} = placeholder para login do usuário
-        // {1} = placeholder para nome do arquivo
-        // -------------------------------------------------------
         stmt.execute("""
             CREATE TABLE IF NOT EXISTS Mensagens (
                 MID   INTEGER PRIMARY KEY,
@@ -114,16 +64,6 @@ public class DatabaseManager {
             )
         """);
 
-        // -------------------------------------------------------
-        // TABELA: Registros
-        // Cada linha é um evento que aconteceu no sistema.
-        //
-        // RID       → identificador único do registro
-        // DATA_HORA → quando o evento aconteceu
-        // MID       → qual mensagem (código) representa o evento
-        // UID       → qual usuário estava envolvido (pode ser nulo)
-        // ARQ_NOME  → qual arquivo foi acessado (pode ser nulo)
-        // -------------------------------------------------------
         stmt.execute("""
             CREATE TABLE IF NOT EXISTS Registros (
                 RID       INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -138,15 +78,10 @@ public class DatabaseManager {
 
         stmt.close();
 
-        // Popula as tabelas fixas na primeira execução
         popularMensagens(conn);
         popularGrupos(conn);
     }
 
-    /**
-     * Insere os dois grupos do sistema caso ainda não existam.
-     * "INSERT OR IGNORE" garante que não duplica se já existir.
-     */
     private static void popularGrupos(Connection conn) throws Exception {
         Statement stmt = conn.createStatement();
         stmt.execute("INSERT OR IGNORE INTO Grupos (GID, NOME) VALUES (1, 'Administrador')");
@@ -154,12 +89,6 @@ public class DatabaseManager {
         stmt.close();
     }
 
-    /**
-     * Insere todas as mensagens de log do enunciado (1001 a 8004).
-     * "INSERT OR IGNORE" garante que não duplica se já existir.
-     * {0} será substituído pelo login do usuário na hora de exibir.
-     * {1} será substituído pelo nome do arquivo na hora de exibir.
-     */
     private static void popularMensagens(Connection conn) throws Exception {
         String[] mensagens = {
                 "INSERT OR IGNORE INTO Mensagens VALUES (1001, 'Sistema iniciado.')",

@@ -30,7 +30,6 @@ public class TelaSaida extends JFrame {
 
     private void inicializarComponentes() {
 
-        // CABEÇALHO
         JPanel cabecalho = new JPanel(new GridLayout(3, 1));
         cabecalho.setBorder(BorderFactory.createTitledBorder("Usuário Logado"));
         cabecalho.add(new JLabel("  Login: " + usuario.getEmail()));
@@ -39,12 +38,10 @@ public class TelaSaida extends JFrame {
         cabecalho.add(new JLabel("  Nome: " + usuario.getNome()));
         add(cabecalho, BorderLayout.NORTH);
 
-        // CORPO 1
         JPanel corpo1 = new JPanel(new FlowLayout(FlowLayout.LEFT));
         corpo1.setBorder(BorderFactory.createTitledBorder("Acessos"));
         corpo1.add(new JLabel("Total de acessos do usuário: " + usuario.getCt()));
 
-        // CORPO 2
         JPanel corpo2 = new JPanel(new BorderLayout(10, 10));
         corpo2.setBorder(BorderFactory.createTitledBorder("Saída do Sistema"));
 
@@ -54,7 +51,6 @@ public class TelaSaida extends JFrame {
         msgSaida.setFont(new Font("Arial", Font.PLAIN, 12));
         corpo2.add(msgSaida, BorderLayout.CENTER);
 
-        // Botões
         JPanel painelBotoes = new JPanel(new FlowLayout(FlowLayout.CENTER));
 
         JButton btnSessao = new JButton("Encerrar Sessão");

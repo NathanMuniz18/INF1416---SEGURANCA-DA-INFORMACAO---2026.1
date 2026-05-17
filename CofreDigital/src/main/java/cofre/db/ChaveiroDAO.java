@@ -6,14 +6,6 @@ import java.sql.ResultSet;
 
 public class ChaveiroDAO {
 
-    /**
-     * Insere um par (certificado, chave privada) no Chaveiro.
-     * Retorna o KID gerado automaticamente pelo banco.
-     *
-     * @param uid          UID do usuário dono do par
-     * @param certificado  certificado X.509 em formato PEM (texto)
-     * @param chavePrivada chave privada PKCS8 cifrada com AES (bytes)
-     */
     public static int inserir(int uid, String certificado,
                               byte[] chavePrivada) throws Exception {
         Connection conn = DatabaseManager.getConnection();
@@ -34,10 +26,6 @@ public class ChaveiroDAO {
         return kid;
     }
 
-    /**
-     * Busca o certificado PEM de um usuário pelo seu UID.
-     * Usado para restaurar a chave pública na autenticação.
-     */
     public static String buscarCertificado(int uid) throws Exception {
         Connection conn = DatabaseManager.getConnection();
         PreparedStatement ps = conn.prepareStatement(
@@ -52,11 +40,6 @@ public class ChaveiroDAO {
         return cert;
     }
 
-    /**
-     * Busca a chave privada cifrada de um usuário pelo seu UID.
-     * Retorna os bytes crus — ainda precisam ser decriptados
-     * com a frase secreta do usuário para usar.
-     */
     public static byte[] buscarChavePrivada(int uid) throws Exception {
         Connection conn = DatabaseManager.getConnection();
         PreparedStatement ps = conn.prepareStatement(

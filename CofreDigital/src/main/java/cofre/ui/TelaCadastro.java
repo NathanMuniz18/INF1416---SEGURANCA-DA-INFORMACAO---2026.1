@@ -25,11 +25,9 @@ public class TelaCadastro extends JFrame {
     // preenchido = admin logado cadastrando outro usuário
     private Usuario adminLogado;
 
-    // Guarda o arquivo selecionado pelo usuário
     private File arquivoCertificado;
     private File arquivoChave;
 
-    // Labels que mostram o nome do arquivo selecionado
     private JLabel lblCertificado;
     private JLabel lblChave;
 
@@ -38,10 +36,6 @@ public class TelaCadastro extends JFrame {
     private JPasswordField txtSenha;
     private JPasswordField txtConfirmaSenha;
 
-    /**
-     * @param adminLogado null se for o primeiro cadastro do admin,
-     *                    ou o objeto Usuario do admin logado
-     */
     public TelaCadastro(Usuario adminLogado) {
         this.adminLogado = adminLogado;
 
@@ -64,11 +58,6 @@ public class TelaCadastro extends JFrame {
 
     private void inicializarComponentes() {
 
-        // -------------------------------------------------------
-        // CABEÇALHO
-        // Se for primeira execução, mostra traços
-        // Se admin já logado, mostra seus dados
-        // -------------------------------------------------------
         JPanel painelCabecalho = new JPanel(new GridLayout(3, 1));
         painelCabecalho.setBorder(BorderFactory.createTitledBorder("Dados do Usuário"));
 
@@ -83,9 +72,6 @@ public class TelaCadastro extends JFrame {
 
         add(painelCabecalho, BorderLayout.NORTH);
 
-        // -------------------------------------------------------
-        // CORPO 1 - total de usuários
-        // -------------------------------------------------------
         JPanel painelCorpo1 = new JPanel(new FlowLayout(FlowLayout.LEFT));
         painelCorpo1.setBorder(BorderFactory.createTitledBorder("Sistema"));
         int totalUsuarios = 0;
@@ -96,9 +82,6 @@ public class TelaCadastro extends JFrame {
         }
         painelCorpo1.add(new JLabel("Total de usuários no sistema: " + totalUsuarios));
 
-        // -------------------------------------------------------
-        // CORPO 2 - formulário
-        // -------------------------------------------------------
         JPanel painelCorpo2 = new JPanel(new GridBagLayout());
         painelCorpo2.setBorder(BorderFactory.createTitledBorder("Formulário de Cadastro"));
         GridBagConstraints gbc = new GridBagConstraints();
@@ -320,7 +303,6 @@ public class TelaCadastro extends JFrame {
 
                 // Restaura a chave privada para validação
                 chavePrivada = CryptoManager.restaurarChavePrivada(bytesChave, frase);
-                System.out.println("Tamanho bytes salvos no banco: " + bytesChave.length);
             } catch (Exception e) {
                 if (adminLogado != null && adminLogado.getUid() > 0)
                     RegistroDAO.registrar(6006, adminLogado.getUid());
@@ -386,53 +368,41 @@ public class TelaCadastro extends JFrame {
             }
             rs.close();
 
-            // Gera hash BCrypt da senha pessoal
             String hash = BCryptUtil.gerarHash(senha);
 
-            // Gera chave TOTP de 20 bytes aleatórios
             byte[] tokenKeyBytes = new byte[20];
             new SecureRandom().nextBytes(tokenKeyBytes);
 
-            // Codifica a chave TOTP em BASE32
             cofre.util.Base32 base32 = new cofre.util.Base32(
                     cofre.util.Base32.Alphabet.BASE32, false, false);
             String tokenKeyBase32 = base32.toString(tokenKeyBytes);
 
-            // Cifra a chave TOTP com AES gerado da senha pessoal
             javax.crypto.SecretKey chaveAES = CryptoManager.gerarChaveAES(senha);
             byte[] tokenKeyCifrado = CryptoManager.cifrarAES(
                     tokenKeyBase32.getBytes("UTF-8"), chaveAES);
             String tokenKeyCifradoBase64 = java.util.Base64.getEncoder()
                     .encodeToString(tokenKeyCifrado);
 
-            // Insere usuário no banco
             int uid = UsuarioDAO.inserir(nome, email, hash,
                     tokenKeyCifradoBase64, grupoSelecionado);
 
-            // Insere certificado e chave no Chaveiro
             int kid = ChaveiroDAO.inserir(uid, certPEM, bytesChave);
 
-            // Atualiza KEYID do usuário
             UsuarioDAO.atualizarKeyId(uid, kid);
-            // Monta a URI do Google Authenticator
             String uri = "otpauth://totp/Cofre%20Digital:" + email + "?secret=" + tokenKeyBase32;
 
-// Gera o QRCode
             com.google.zxing.qrcode.QRCodeWriter qrWriter = new com.google.zxing.qrcode.QRCodeWriter();
             com.google.zxing.common.BitMatrix bitMatrix = qrWriter.encode(
                     uri, com.google.zxing.BarcodeFormat.QR_CODE, 200, 200);
             java.awt.image.BufferedImage qrImage = com.google.zxing.client.j2se.MatrixToImageWriter
                     .toBufferedImage(bitMatrix);
 
-// Painel com QRCode e campos copiáveis
             JPanel painelTotp = new JPanel(new BorderLayout(10, 10));
 
-// QRCode no topo
             JLabel lblQR = new JLabel(new ImageIcon(qrImage));
             lblQR.setHorizontalAlignment(SwingConstants.CENTER);
             painelTotp.add(lblQR, BorderLayout.NORTH);
 
-// Campos copiáveis no centro
             JPanel painelCampos = new JPanel(new GridLayout(4, 1, 5, 5));
             painelCampos.add(new JLabel("Usuário cadastrado! Escaneie o QRCode ou copie o segredo:"));
 
@@ -453,8 +423,6 @@ public class TelaCadastro extends JFrame {
                     "Cadastro Realizado",
                     JOptionPane.INFORMATION_MESSAGE);
 
-
-            // Limpa o formulário
             arquivoCertificado = null;
             arquivoChave = null;
             lblCertificado.setText("Nenhum arquivo selecionado");
@@ -465,7 +433,6 @@ public class TelaCadastro extends JFrame {
             txtSenha.setText("");
             txtConfirmaSenha.setText("");
 
-            // Se for o primeiro admin vai para a tela de login
             boolean primeiroAdmin = (adminLogado == null || adminLogado.getUid() == 0);
             if (primeiroAdmin) {
                 // Salva a frase do admin em memória
@@ -486,7 +453,6 @@ public class TelaCadastro extends JFrame {
         if (!senha.equals(confirmaSenha)) return false;
         if (!senha.matches("\\d{8,10}")) return false;
 
-        // Verifica se há dígitos repetidos em qualquer posição
         for (int i = 0; i < senha.length(); i++) {
             for (int j = i + 1; j < senha.length(); j++) {
                 if (senha.charAt(i) == senha.charAt(j)) return false;

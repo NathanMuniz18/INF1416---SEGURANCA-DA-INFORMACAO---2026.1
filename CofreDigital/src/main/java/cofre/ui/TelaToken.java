@@ -18,11 +18,6 @@ public class TelaToken extends JFrame {
     private int tentativasErro = 0;
     private JTextField txtToken;
 
-    /**
-     * @param usuario      usuário que está se autenticando
-     * @param senhaCorreta senha que foi validada na etapa 2
-     *                     (necessária para decifrar a TOKEN_KEY)
-     */
     public TelaToken(Usuario usuario, String senhaCorreta) {
         this.usuario = usuario;
         this.senhaCorreta = senhaCorreta;
@@ -58,7 +53,6 @@ public class TelaToken extends JFrame {
         gbc.gridx = 1; gbc.weightx = 1.0;
         painel.add(txtToken, gbc);
 
-        // Botões
         JPanel painelBotoes = new JPanel(new FlowLayout(FlowLayout.CENTER));
         JButton btnOK = new JButton("OK");
         JButton btnLimpar = new JButton("LIMPAR");
@@ -100,10 +94,8 @@ public class TelaToken extends JFrame {
                     tokenKeyCifrado, chaveAES);
             String tokenKeyBase32 = new String(tokenKeyBytes, "UTF-8");
 
-            // Cria o objeto TOTP com a chave decifrada
             TOTP totp = new TOTP(tokenKeyBase32, 30);
 
-            // Valida o código digitado
             boolean valido = totp.validateCode(codigoDigitado);
 
             if (valido) {

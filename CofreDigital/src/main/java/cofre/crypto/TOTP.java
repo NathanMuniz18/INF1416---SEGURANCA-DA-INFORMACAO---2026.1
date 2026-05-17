@@ -1,8 +1,4 @@
 package cofre.crypto;
-//a classe TOTP deve ser implementada 
-//usando, APENAS, as classes de apoio 
-//javax.crypto.Mac, javax.crypto.spec.SecretKeySpec, 
-//java.util.Date e BASE32.
 import cofre.util.Base32; 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;

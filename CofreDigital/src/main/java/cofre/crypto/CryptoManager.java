@@ -22,19 +22,9 @@ public class CryptoManager {
         Security.addProvider(new BouncyCastleProvider());
     }
 
-    // -------------------------------------------------------
     // GERAÇÃO DE CHAVE AES A PARTIR DE UMA FRASE SECRETA
     // Usa SHA1PRNG como gerador, conforme especificado no enunciado
-    // -------------------------------------------------------
 
-    /**
-     * Gera uma chave AES de 256 bits a partir de uma frase secreta.
-     * Usa SHA1PRNG para gerar a chave de forma determinística —
-     * ou seja, a mesma frase sempre gera a mesma chave.
-     *
-     * @param fraseSecreta senha do usuário
-     * @return chave AES de 256 bits
-     */
     public static SecretKey gerarChaveAES(String fraseSecreta) throws Exception {
         // SHA1PRNG é um gerador pseudo-aleatório baseado em SHA1
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
@@ -141,10 +131,6 @@ public class CryptoManager {
         return bytesArquivo;
     }
 
-    // -------------------------------------------------------
-    // RESTAURAÇÃO DA CHAVE PÚBLICA (CERTIFICADO X.509)
-    // -------------------------------------------------------
-
     /**
      * Restaura o certificado X.509 a partir de uma String PEM.
      * Usado para obter a chave pública do usuário.
@@ -177,10 +163,6 @@ public class CryptoManager {
         return new String(bytes, "UTF-8");
     }
 
-    // -------------------------------------------------------
-    // ASSINATURA DIGITAL (SHA1withRSA)
-    // -------------------------------------------------------
-
     /**
      * Assina um array de bytes com a chave privada usando SHA1withRSA.
      * Usado para gerar o arquivo .asd dos arquivos protegidos.
@@ -212,10 +194,6 @@ public class CryptoManager {
         sig.update(dados);
         return sig.verify(assinatura);
     }
-
-    // -------------------------------------------------------
-    // ENVELOPE DIGITAL (RSA/ECB/PKCS1Padding)
-    // -------------------------------------------------------
 
     /**
      * Cifra uma semente com a chave pública do usuário (envelope digital).

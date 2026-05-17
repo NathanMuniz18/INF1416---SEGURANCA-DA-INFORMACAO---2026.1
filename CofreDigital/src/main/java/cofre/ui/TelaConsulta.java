@@ -45,7 +45,6 @@ public class TelaConsulta extends JFrame {
 
     private void inicializarComponentes() {
 
-        // CABEÇALHO
         JPanel cabecalho = new JPanel(new GridLayout(3, 1));
         cabecalho.setBorder(BorderFactory.createTitledBorder("Usuário Logado"));
         cabecalho.add(new JLabel("  Login: " + usuario.getEmail()));
@@ -54,12 +53,10 @@ public class TelaConsulta extends JFrame {
         cabecalho.add(new JLabel("  Nome: " + usuario.getNome()));
         add(cabecalho, BorderLayout.NORTH);
 
-        // CORPO 1
         JPanel corpo1 = new JPanel(new FlowLayout(FlowLayout.LEFT));
         corpo1.setBorder(BorderFactory.createTitledBorder("Consultas"));
         corpo1.add(new JLabel("Total de consultas do usuário: " + usuario.getCt()));
 
-        // CORPO 2
         JPanel corpo2 = new JPanel(new BorderLayout(5, 5));
         corpo2.setBorder(BorderFactory.createTitledBorder("Consulta de Arquivos Secretos"));
 
@@ -68,7 +65,6 @@ public class TelaConsulta extends JFrame {
         gbc.insets = new Insets(5, 5, 5, 5);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        // Caminho da pasta
         gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0;
         formulario.add(new JLabel("Caminho da pasta:"), gbc);
 
@@ -81,7 +77,6 @@ public class TelaConsulta extends JFrame {
         gbc.gridx = 2; gbc.weightx = 0;
         formulario.add(btnPasta, gbc);
 
-        // Frase secreta
         gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = 0;
         formulario.add(new JLabel("Frase secreta:"), gbc);
 
@@ -90,7 +85,6 @@ public class TelaConsulta extends JFrame {
         formulario.add(txtFraseSecreta, gbc);
         gbc.gridwidth = 1; gbc.weightx = 0;
 
-        // Botão Listar
         JButton btnListar = new JButton("Listar");
         btnListar.addActionListener(e -> listarArquivos());
         gbc.gridx = 0; gbc.gridy = 2;
@@ -101,7 +95,6 @@ public class TelaConsulta extends JFrame {
 
         corpo2.add(formulario, BorderLayout.NORTH);
 
-        // Tabela
         String[] colunas = {"Nome Código", "Nome Secreto", "Dono", "Grupo"};
         modeloTabela = new DefaultTableModel(colunas, 0) {
             public boolean isCellEditable(int row, int col) { return false; }
@@ -165,8 +158,22 @@ public class TelaConsulta extends JFrame {
         File indexEnv = new File(pasta, "index.env");
         File indexAsd = new File(pasta, "index.asd");
 
-        if (!indexEnc.exists() || !indexEnv.exists() || !indexAsd.exists()) {
-            JOptionPane.showMessageDialog(this, "Pasta não contém os arquivos de índice!", "Erro", JOptionPane.ERROR_MESSAGE);
+        if (!indexEnc.exists() || indexEnc.length() == 0) {
+            JOptionPane.showMessageDialog(this,
+                    "Arquivo index.enc inválido ou corrompido!",
+                    "Erro", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        if (!indexEnv.exists() || indexEnv.length() == 0) {
+            JOptionPane.showMessageDialog(this,
+                    "Arquivo index.env inválido ou corrompido!",
+                    "Erro", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        if (!indexAsd.exists() || indexAsd.length() == 0) {
+            JOptionPane.showMessageDialog(this,
+                    "Arquivo index.asd inválido ou corrompido!",
+                    "Erro", JOptionPane.ERROR_MESSAGE);
             return;
         }
 

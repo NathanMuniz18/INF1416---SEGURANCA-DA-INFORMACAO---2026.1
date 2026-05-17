@@ -1,3 +1,6 @@
+//Nathan 2212759
+//Hanna 2310289
+
 package cofre;
 
 import cofre.db.DatabaseManager;

@@ -1,3 +1,7 @@
+//Nathan 2212759
+//Hanna 2310289
+
+
 package cofre.crypto;
 import cofre.util.Base32; 
 import javax.crypto.Mac;

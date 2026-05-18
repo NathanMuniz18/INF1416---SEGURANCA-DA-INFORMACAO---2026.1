@@ -1,3 +1,5 @@
+//Nathan 2212759
+//Hanna 2310289
 package logview;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -28,7 +30,7 @@ public class Main {
         // 2. Lê a frase secreta via teclado sem echo
         Console console = System.console();
         if (console == null) {
-            System.out.println("Erro: execute pelo CMD, não pelo IntelliJ!");
+            System.out.println("Erro: execute pelo CMD, não pelo Eclipse/IntelliJ!");
             System.exit(1);
         }
 
@@ -57,11 +59,11 @@ public class Main {
             return;
         }
 
-        // 5. Valida assinando 2048 bytes
+        // 5. Valida assinando 2048 bytes aleatórios (conforme enunciado)
         try {
             String certPEM = buscarCertificadoAdmin(caminhoBanco);
             if (certPEM == null) {
-                System.out.println("Erro: certificado do admin não encontrado no banco!");
+                System.out.println("Erro: certificado do administrador não encontrado no banco!");
                 System.exit(1);
                 return;
             }
@@ -90,26 +92,37 @@ public class Main {
     private static void exibirLogs(String caminhoBanco) {
         try {
             Connection conn = DriverManager.getConnection("jdbc:sqlite:" + caminhoBanco);
+
+            // JOIN com Mensagens (coluna TEXTO) e Usuarios (coluna EMAIL)
+            // ARQ_NOME é a coluna de arquivo na tabela Registros
             PreparedStatement ps = conn.prepareStatement(
-                    "SELECT r.DATA_HORA, r.MID, u.EMAIL, u.NOME " +
-                            "FROM Registros r " +
-                            "LEFT JOIN Usuarios u ON r.UID = u.UID " +
-                            "ORDER BY r.DATA_HORA ASC"
+                "SELECT r.DATA_HORA, r.MID, r.ARQ_NOME, u.EMAIL, m.TEXTO " +
+                "FROM Registros r " +
+                "LEFT JOIN Usuarios u ON r.UID = u.UID " +
+                "LEFT JOIN Mensagens m ON r.MID = m.MID " +
+                "ORDER BY r.DATA_HORA ASC"
             );
 
             ResultSet rs = ps.executeQuery();
             while (rs.next()) {
                 String dataHora = rs.getString("DATA_HORA");
-                int mid = rs.getInt("MID");
-                String email = rs.getString("EMAIL");
-                String nome = rs.getString("NOME");
+                int    mid      = rs.getInt("MID");
+                String arqNome  = rs.getString("ARQ_NOME"); // null para registros sem arquivo
+                String email    = rs.getString("EMAIL");    // null para registros sem usuário
+                String texto    = rs.getString("TEXTO");    // template: usa {0} e {1}
 
-                if (email != null) {
-                    System.out.printf("[%s] %d (%s - %s)%n",
-                            dataHora, mid, nome, email);
+                // Interpola os placeholders:
+                // {0} = login_name do usuário
+                // {1} = nome do arquivo
+                if (texto != null) {
+                    texto = texto.replace("{0}", email   != null ? email   : "");
+                    texto = texto.replace("{1}", arqNome != null ? arqNome : "");
                 } else {
-                    System.out.printf("[%s] %d%n", dataHora, mid);
+                    // Fallback: mensagem não cadastrada no banco
+                    texto = "(mensagem não encontrada para código " + mid + ")";
                 }
+
+                System.out.printf("[%s] %d %s%n", dataHora, mid, texto);
             }
 
             rs.close();
@@ -124,8 +137,9 @@ public class Main {
     private static String buscarCertificadoAdmin(String caminhoBanco) {
         try {
             Connection conn = DriverManager.getConnection("jdbc:sqlite:" + caminhoBanco);
+            // Admin é sempre UID = 1
             PreparedStatement ps = conn.prepareStatement(
-                    "SELECT CERTIFICADO FROM Chaveiro WHERE UID = 1"
+                "SELECT CERTIFICADO FROM Chaveiro WHERE UID = 1"
             );
             ResultSet rs = ps.executeQuery();
             String cert = null;
@@ -141,22 +155,26 @@ public class Main {
 
     private static PrivateKey restaurarChavePrivada(byte[] bytesChaveCifrada,
                                                     String fraseSecreta) throws Exception {
+        // Gera chave AES a partir da frase secreta com SHA1PRNG — idêntico ao sistema principal
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
         sr.setSeed(fraseSecreta.getBytes("UTF-8"));
         javax.crypto.KeyGenerator kg = javax.crypto.KeyGenerator.getInstance("AES");
         kg.init(256, sr);
         javax.crypto.SecretKey chaveAES = kg.generateKey();
 
+        // Decifra os bytes da chave privada
         javax.crypto.Cipher cipher = javax.crypto.Cipher.getInstance("AES/ECB/PKCS5Padding");
         cipher.init(javax.crypto.Cipher.DECRYPT_MODE, chaveAES);
         byte[] bytesBase64 = cipher.doFinal(bytesChaveCifrada);
 
+        // Remove cabeçalho/rodapé PEM e decodifica Base64
         String pemStr = new String(bytesBase64, "UTF-8");
         pemStr = pemStr.replace("-----BEGIN PRIVATE KEY-----", "")
-                .replace("-----END PRIVATE KEY-----", "")
-                .replaceAll("\\s", "");
+                       .replace("-----END PRIVATE KEY-----", "")
+                       .replaceAll("\\s", "");
         byte[] bytesChave = Base64.getDecoder().decode(pemStr);
 
+        // Reconstrói o objeto PrivateKey
         PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(bytesChave);
         KeyFactory keyFactory = KeyFactory.getInstance("RSA");
         return keyFactory.generatePrivate(keySpec);
